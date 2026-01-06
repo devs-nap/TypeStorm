@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typestorm Pro - Word Shooter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #121225 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .game-wrapper {
+            max-width: 1000px;
+            width: 100%;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .title {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+            animation: titleGlow 2s infinite alternate;
+        }
+        
+        @keyframes titleGlow {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.2); }
+        }
+        
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+        
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .stat {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        
+        .stat:hover {
+            transform: translateY(-2px);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #60a5fa;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: #cbd5e1;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .level-info {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 550px;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+        }
+        
+        .btn-secondary {
+            background: rgba(30, 41, 59, 0.8);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(30, 41, 59, 1);
+            border-color: rgba(96, 165, 250, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .instructions h3 {
+            color: #60a5fa;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+        
+        .instructions p {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .sound-control {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            outline: none;
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: 2px solid #1e293b;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+        
+        .game-over-content {
+            background: rgba(30, 41, 59, 0.95);
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 450px;
+            width: 90%;
+            backdrop-filter: blur(20px);
+        }
+        
+        .game-over h2 {
+            color: #ef4444;
+            margin-bottom: 20px;
+            font-size: 2.2rem;
+        }
+        
+        .final-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-final {
+            background: rgba(30, 41, 59, 0.6);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-final-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        
+        .stat-final-value {
+            color: #60a5fa;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .level-up {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+        
+        .level-up-content {
+            background: rgba(30, 41, 59, 0.95);
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 450px;
+            width: 90%;
+            backdrop-filter: blur(20px);
+        }
+        
+        .level-up h2 {
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6, #fbbf24);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+        
+        .level-up-number {
+            font-size: 4.5rem;
+            font-weight: 800;
+            color: #fbbf24;
+            margin: 20px 0;
+            text-shadow: 0 0 40px rgba(251, 191, 36, 0.5);
+            animation: pulseGlow 1.5s infinite;
+        }
+        
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .streak-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .streak-fire {
+            color: #fbbf24;
+            animation: firePulse 0.5s infinite alternate;
+        }
+        
+        @keyframes firePulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.2); }
+        }
+        
+        .next-letter-preview {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 12px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+        
+        .preview-label {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+        }
+        
+        .preview-letter {
+            color: #fbbf24;
+            font-size: 1.8rem;
+            font-weight: bold;
+            font-family: monospace;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-bar {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .game-container {
+                height: 450px;
+            }
+            
+            .title {
+                font-size: 2.2rem;
+            }
+            
+            .controls {
+                flex-wrap: wrap;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .game-container {
+                height: 400px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 250px;
+                justify-content: center;
+            }
+            
+            .level-up-number {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-wrapper">
+        <div class="header">
+            <h1 class="title">Typestorm Pro</h1>
+            <p class="subtitle">ZType Speed + Advanced Features</p>
+        </div>
+        
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-value" id="score">0</div>
+                <div class="stat-label">Score</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="level">1</div>
+                <div class="stat-label">Level</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="accuracy">100%</div>
+                <div class="stat-label">Accuracy</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="wpm">0</div>
+                <div class="stat-label">WPM</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="lives">5</div>
+                <div class="stat-label">Lives</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="speed">1.0x</div>
+                <div class="stat-label">Speed</div>
+            </div>
+        </div>
+        
+        <div class="level-info">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="color: #94a3b8; font-size: 0.9rem;">Level Progress</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color: #cbd5e1; font-size: 0.8rem;" id="streak-info">Streak: 0</span>
+                    <span style="color: #60a5fa; font-weight: 600; font-size: 1.1rem;" id="progress-text">0/8</span>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="level-progress"></div>
+            </div>
+        </div>
+        
+        <div class="game-container">
+            <canvas id="gameCanvas"></canvas>
+            
+            <!-- Advanced UI Elements -->
+            <div class="sound-control">
+                <span style="color: #94a3b8;">🔊</span>
+                <input type="range" min="0" max="100" value="50" class="volume-slider" id="volume">
+            </div>
+            
+            <div class="streak-indicator" id="streakIndicator">
+                <span class="streak-fire">🔥</span>
+                <span style="color: #fbbf24; font-weight: 600;" id="streakCount">0</span>
+                <span style="color: #cbd5e1;">STREAK!</span>
+            </div>
+            
+            <div class="next-letter-preview" id="nextLetterPreview">
+                <div class="preview-label">NEXT LETTER</div>
+                <div class="preview-letter" id="nextLetter">A</div>
+            </div>
+            
+            <!-- Game Over Screen -->
+            <div class="game-over" id="gameOver">
+                <div class="game-over-content">
+                    <h2>Mission Failed</h2>
+                    <div class="final-stats">
+                        <div class="stat-final">
+                            <div class="stat-final-label">Final Score</div>
+                            <div class="stat-final-value" id="final-score">0</div>
+                        </div>
+                        <div class="stat-final">
+                            <div class="stat-final-label">Level Reached</div>
+                            <div class="stat-final-value" id="final-level">1</div>
+                        </div>
+                        <div class="stat-final">
+                            <div class="stat-final-label">Accuracy</div>
+                            <div class="stat-final-value" id="final-accuracy">100%</div>
+                        </div>
+                        <div class="stat-final">
+                            <div class="stat-final-label">Best WPM</div>
+                            <div class="stat-final-value" id="final-wpm">0</div>
+                        </div>
+                        <div class="stat-final">
+                            <div class="stat-final-label">Max Streak</div>
+                            <div class="stat-final-value" id="final-streak">0</div>
+                        </div>
+                        <div class="stat-final">
+                            <div class="stat-final-label">Words Typed</div>
+                            <div class="stat-final-value" id="final-words">0</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="restart-btn" style="margin-top: 20px;">
+                        <span>⚡</span> Play Again
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Level Up Screen -->
+            <div class="level-up" id="levelUp">
+                <div class="level-up-content">
+                    <h2>Level Up!</h2>
+                    <div class="level-up-number" id="new-level">2</div>
+                    <p style="color: #cbd5e1; margin-bottom: 10px;">You've reached level <span id="level-number">2</span>!</p>
+                    <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px;" id="level-message">Words will be longer and faster</p>
+                    <button class="btn btn-primary" id="continue-btn">
+                        <span>🎮</span> Continue Challenge
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-primary" id="start-btn">
+                <span>🚀</span> Start Game
+            </button>
+            <button class="btn btn-secondary" id="pause-btn">
+                <span>⏸️</span> Pause
+            </button>
+            <button class="btn btn-secondary" id="reset-btn">
+                <span>🔄</span> Reset
+            </button>
+        </div>
+        
+        <div class="instructions">
+            <h3>🎯 How to Play - Advanced Features</h3>
+            <p>• <strong>Type falling words</strong> before they reach the bottom - ZType speed!</p>
+            <p>• <strong>Streak System:</strong> Consecutive words give bonus points (3+ streak = extra points)</p>
+            <p>• <strong>Next Letter Preview:</strong> Shows the next letter to type</p>
+            <p>• <strong>Bonus Lives:</strong> Earn extra life every 5 levels</p>
+            <p>• <strong>Visual Feedback:</strong> Green ✓ for correct letters, red ✗ for mistakes</p>
+            <p>• <strong>Press ESC</strong> to pause/unpause anytime</p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // GAME VARIABLES - WITH ALL NEW FEATURES
+        // ============================================
+        let canvas, ctx;
+        let gameRunning = false;
+        let gamePaused = false;
+        let score = 0;
+        let level = 1;
+        let lives = 5;
+        let accuracy = 100;
+        let lettersTyped = 0;
+        let correctLetters = 0;
+        let wordsCompleted = 0;
+        let wpm = 0;
+        let startTime;
+        let lastWordTime = 0;
+        let currentProgress = 0;
+        let wordsNeeded = 8;
+        let wordStreak = 0;
+        let maxStreak = 0;
+        let totalWordsTyped = 0;
+        
+        // Game Objects
+        let words = [];
+        let particles = [];
+        let floatingTexts = [];
+        
+        // Sound
+        let audioContext;
+        let volume = 0.5;
+        
+        // ============================================
+        // ZTYPE SPEED CONFIGURATION - PERFECTED
+        // ============================================
+        const levelConfig = {
+            // Level 1-3: Fast start like ZType
+            1: { wordsNeeded: 8, spawnDelay: 2000, speed: 0.25, maxWords: 2 },
+            2: { wordsNeeded: 9, spawnDelay: 1800, speed: 0.30, maxWords: 2 },
+            3: { wordsNeeded: 10, spawnDelay: 1600, speed: 0.35, maxWords: 3 },
+            
+            // Level 4-6: Gets faster quickly
+            4: { wordsNeeded: 11, spawnDelay: 1500, speed: 0.40, maxWords: 3 },
+            5: { wordsNeeded: 12, spawnDelay: 1400, speed: 0.45, maxWords: 3 },
+            6: { wordsNeeded: 13, spawnDelay: 1300, speed: 0.50, maxWords: 4 },
+            
+            // Level 7-9: Challenging speed
+            7: { wordsNeeded: 14, spawnDelay: 1200, speed: 0.55, maxWords: 4 },
+            8: { wordsNeeded: 15, spawnDelay: 1100, speed: 0.60, maxWords: 4 },
+            9: { wordsNeeded: 16, spawnDelay: 1000, speed: 0.65, maxWords: 5 },
+            
+            // Level 10-12: Very fast like mid ZType
+            10: { wordsNeeded: 17, spawnDelay: 900, speed: 0.70, maxWords: 5 },
+            11: { wordsNeeded: 18, spawnDelay: 850, speed: 0.75, maxWords: 5 },
+            12: { wordsNeeded: 19, spawnDelay: 800, speed: 0.80, maxWords: 6 },
+            
+            // Level 13-15: Expert speed
+            13: { wordsNeeded: 20, spawnDelay: 750, speed: 0.85, maxWords: 6 },
+            14: { wordsNeeded: 21, spawnDelay: 700, speed: 0.90, maxWords: 6 },
+            15: { wordsNeeded: 22, spawnDelay: 650, speed: 0.95, maxWords: 7 },
+            
+            // Level 16-18: Insane speed
+            16: { wordsNeeded: 24, spawnDelay: 600, speed: 1.00, maxWords: 7 },
+            17: { wordsNeeded: 26, spawnDelay: 550, speed: 1.05, maxWords: 7 },
+            18: { wordsNeeded: 28, spawnDelay: 500, speed: 1.10, maxWords: 8 },
+            
+            // Level 19-20: ZType endgame speed
+            19: { wordsNeeded: 30, spawnDelay: 450, speed: 1.15, maxWords: 8 },
+            20: { wordsNeeded: 32, spawnDelay: 400, speed: 1.20, maxWords: 8 }
+        };
+        
+        // ============================================
+        // EXPANDED WORD BANK
+        // ============================================
+        const wordBank = [
+            // Short words (Level 1-5)
+            "CAT", "DOG", "SUN", "MOON", "STAR", "BOOK", "PEN", "CAR", "BED", "CUP",
+            "KEY", "HAT", "MAP", "TOY", "ANT", "EGG", "ICE", "JAM", "LEG", "MAN",
+            "HI", "BYE", "YES", "NO", "AIR", "BOX", "DAY", "EYE", "FOX", "GOD",
+            "HOT", "INK", "JET", "KEY", "LOW", "MUD", "NET", "OAK", "PIE", "RAY",
+            "SAW", "TEA", "USE", "VAN", "WAX", "YES", "ZOO", "BAG", "CAN", "DIP",
+            
+            // Medium words (Level 6-10)
+            "FISH", "BIRD", "CAKE", "MILK", "BALL", "SHOE", "TREE", "RAIN", "SNOW", "FIRE",
+            "WIND", "SKY", "DOOR", "CHAIR", "TABLE", "PHONE", "CLOCK", "LIGHT", "DARK", "COLD",
+            "HOT", "RED", "BLUE", "GREEN", "BLACK", "WHITE", "BIG", "SMALL", "FAST", "SLOW",
+            "HIGH", "LOW", "WARM", "COOL", "SOFT", "HARD", "NEW", "OLD", "GOOD", "BAD",
+            "WATER", "EARTH", "HOUSE", "CLOUD", "SUGAR", "PAPER", "GLASS", "MUSIC", "DANCE", "HEART",
+            
+            // Longer words (Level 11-15)
+            "SMILE", "APPLE", "HAPPY", "FLOWER", "GARDEN", "FRIEND", "FAMILY", "SCHOOL", "LEARN", "TEACH",
+            "WRITE", "READ", "PLAY", "WORK", "REST", "FOOD", "DRINK", "SLEEP", "WAKE", "LAUGH",
+            "CRY", "LOVE", "HOPE", "DREAM", "PLANT", "ANIMAL", "COLOR", "SHAPE", "SOUND", "TRAIN",
+            "COMPUTER", "KEYBOARD", "MONITOR", "PROGRAM", "SYSTEM", "NETWORK", "DIGITAL", "BROWSER",
+            
+            // Advanced words (Level 16-20)
+            "WEBSITE", "INTERNET", "MESSAGE", "PICTURE", "CAMERA", "TEACHER", "STUDENT", "LIBRARY",
+            "SCIENCE", "HISTORY", "MATH", "ART", "SPORT", "GAME", "MOVIE", "MUSIC", "DANCE", "SPEAK",
+            "LISTEN", "WATCH", "LEARN", "STUDY", "THINK", "CREATE", "BUILD", "MAKE", "TRAVEL", "EXPLORE",
+            "SOFTWARE", "HARDWARE", "DATABASE", "EMAIL", "VIDEO", "PROCESS", "ANALYSIS", "CREATIVE",
+            "DISCOVER", "EXPLORER", "FUNCTION", "GRAPHICS", "HISTORY", "JOURNEY", "KINDNESS", "LANGUAGE",
+            "PROGRAMMING", "ALGORITHM", "DEVELOPMENT", "APPLICATION", "TECHNOLOGY", "INNOVATION",
+            "ENVIRONMENT", "COMMUNICATION", "CELEBRATION", "DETERMINATION", "EXPERIENCE", "KNOWLEDGE",
+            "MANAGEMENT", "ORGANIZATION", "LEADERSHIP", "UNDERSTANDING", "IMPORTANT", "BEAUTIFUL",
+            
+            // Challenge words for high levels
+            "INFORMATION", "TECHNOLOGY", "COMPUTATION", "CALCULATION", "EXPERIMENTAL", "EDUCATIONAL",
+            "PROFESSIONAL", "INTERNATIONAL", "IMAGINATION", "POSSIBILITY", "DIFFICULTY", "OPPORTUNITY",
+            "SUCCESSFUL", "UNDERSTAND", "INVESTMENT", "DEVELOPMENT", "GOVERNMENT", "PRESIDENT"
+        ];
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            // Initialize audio
+            initAudio();
+            
+            // Event Listeners
+            setupEventListeners();
+            
+            // Draw initial screen
+            drawMenu();
+        }
+        
+        function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.log("Audio not supported");
+            }
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('start-btn').addEventListener('click', startGame);
+            document.getElementById('pause-btn').addEventListener('click', togglePause);
+            document.getElementById('reset-btn').addEventListener('click', resetGame);
+            document.getElementById('restart-btn').addEventListener('click', restartGame);
+            document.getElementById('continue-btn').addEventListener('click', continueGame);
+            document.getElementById('volume').addEventListener('input', updateVolume);
+            
+            document.addEventListener('keydown', handleKeyPress);
+            window.addEventListener('resize', resizeCanvas);
+        }
+        
+        // ============================================
+        // AUDIO FUNCTIONS
+        // ============================================
+        function playSound(freq, type = 'sine', duration = 0.1) {
+            if (!audioContext || volume === 0) return;
+            
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc.frequency.value = freq;
+            osc.type = type;
+            
+            gain.gain.setValueAtTime(volume, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+            
+            osc.start();
+            osc.stop(audioContext.currentTime + duration);
+        }
+        
+        function updateVolume(e) {
+            volume = e.target.value / 100;
+            playSound(440, 'sine', 0.05); // Test sound
+        }
+        
+        // ============================================
+        // GAME CONTROL FUNCTIONS
+        // ============================================
+        function startGame() {
+            if (gameRunning) return;
+            
+            gameRunning = true;
+            gamePaused = false;
+            
+            // Reset stats
+            score = 0;
+            level = 1;
+            lives = 5;
+            accuracy = 100;
+            lettersTyped = 0;
+            correctLetters = 0;
+            wordsCompleted = 0;
+            wpm = 0;
+            currentProgress = 0;
+            wordStreak = 0;
+            maxStreak = 0;
+            totalWordsTyped = 0;
+            wordsNeeded = levelConfig[level].wordsNeeded;
+            
+            words = [];
+            particles = [];
+            floatingTexts = [];
+            
+            startTime = Date.now();
+            lastWordTime = Date.now();
+            
+            // Update UI
+            updateUI();
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('levelUp').style.display = 'none';
+            document.getElementById('streakIndicator').style.display = 'none';
+            document.getElementById('nextLetterPreview').style.display = 'none';
+            
+            // Start game loop
+            gameLoop();
+            
+            // Play start sound
+            playSound(523.25, 'sine', 0.2);
+        }
+        
+        function togglePause() {
+            if (!gameRunning) return;
+            
+            gamePaused = !gamePaused;
+            document.getElementById('pause-btn').textContent = gamePaused ? '▶️ Resume' : '⏸️ Pause';
+            
+            if (gamePaused) {
+                playSound(392, 'sine', 0.1);
+            } else {
+                playSound(440, 'sine', 0.1);
+                gameLoop();
+            }
+        }
+        
+        function resetGame() {
+            gameRunning = false;
+            gamePaused = false;
+            document.getElementById('pause-btn').textContent = '⏸️ Pause';
+            drawMenu();
+        }
+        
+        function restartGame() {
+            document.getElementById('gameOver').style.display = 'none';
+            startGame();
+        }
+        
+        function continueGame() {
+            document.getElementById('levelUp').style.display = 'none';
+            gamePaused = false;
+            gameLoop();
+        }
+        
+        // ============================================
+        // MAIN GAME LOOP
+        // ============================================
+        function gameLoop() {
+            if (!gameRunning || gamePaused) return;
+            
+            // Clear canvas
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background
+            drawGrid();
+            
+            // Update time
+            const currentTime = Date.now();
+            const deltaTime = Math.min(32, currentTime - lastWordTime) / 16;
+            
+            // Get level config
+            const config = levelConfig[Math.min(level, 20)];
+            
+            // Spawn new words
+            if (words.length < config.maxWords && currentTime - lastWordTime > config.spawnDelay) {
+                spawnWord();
+                lastWordTime = currentTime;
+            }
+            
+            // Update words
+            for (let i = words.length - 1; i >= 0; i--) {
+                const word = words[i];
+                
+                // Move word
+                word.y += config.speed * deltaTime;
+                
+                // Check if reached bottom
+                if (word.y > canvas.height) {
+                    words.splice(i, 1);
+                    lives--;
+                    wordStreak = 0;
+                    updateStreakDisplay();
+                    
+                    playSound(220, 'sawtooth', 0.3);
+                    
+                    // Create explosion
+                    createExplosion(word.x, canvas.height - 20, '#ef4444');
+                    
+                    // Show miss text
+                    addFloatingText(word.x, word.y, 'MISS!', '#ef4444');
+                    
+                    updateUI();
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                        return;
+                    }
+                } else {
+                    drawWord(word);
+                }
+            }
+            
+            // Update particles and floating texts
+            updateParticles();
+            updateFloatingTexts();
+            
+            // Show next letter preview
+            updateNextLetterPreview();
+            
+            // Calculate WPM
+            const timeElapsed = (currentTime - startTime) / 60000;
+            if (timeElapsed > 0) {
+                wpm = Math.floor(wordsCompleted / timeElapsed);
+                updateUI();
+            }
+            
+            // Continue loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // ============================================
+        // GAME OBJECT FUNCTIONS
+        // ============================================
+        function spawnWord() {
+            // Get word length based on level (ZType style progression)
+            let minLength, maxLength;
+            
+            if (level <= 5) {
+                minLength = 3; maxLength = 5;   // Early: Short words
+            } else if (level <= 10) {
+                minLength = 4; maxLength = 7;   // Mid: Medium words
+            } else if (level <= 15) {
+                minLength = 5; maxLength = 9;   // Late: Long words
+            } else {
+                minLength = 6; maxLength = 12;  // Expert: Very long words
+            }
+            
+            // Filter words by length
+            const availableWords = wordBank.filter(w => w.length >= minLength && w.length <= maxLength);
+            
+            // If no words match criteria, use any word
+            const wordText = availableWords.length > 0 
+                ? availableWords[Math.floor(Math.random() * availableWords.length)]
+                : wordBank[Math.floor(Math.random() * wordBank.length)];
+            
+            const x = Math.random() * (canvas.width - 100) + 50;
+            
+            words.push({
+                text: wordText,
+                x: x,
+                y: 40,
+                currentIndex: 0
+            });
+            
+            playSound(659.25, 'sine', 0.1);
+        }
+        
+        function drawWord(word) {
+            const letterSpacing = 25;
+            const startX = word.x - (word.text.length * letterSpacing) / 2;
+            
+            for (let i = 0; i < word.text.length; i++) {
+                const x = startX + i * letterSpacing;
+                const letter = word.text[i];
+                
+                // Determine color
+                let color, shadowBlur;
+                if (i < word.currentIndex) {
+                    color = '#60a5fa';
+                    shadowBlur = 10;
+                } else if (i === word.currentIndex) {
+                    color = '#fbbf24';
+                    shadowBlur = 20;
+                } else {
+                    color = '#e2e8f0';
+                    shadowBlur = 5;
+                }
+                
+                // Draw letter background
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+                ctx.beginPath();
+                ctx.arc(x, word.y, 18, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw letter
+                ctx.fillStyle = color;
+                ctx.font = 'bold 20px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowBlur = shadowBlur;
+                ctx.shadowColor = color;
+                ctx.fillText(letter, x, word.y);
+                ctx.shadowBlur = 0;
+                
+                // Highlight current letter
+                if (i === word.currentIndex) {
+                    ctx.strokeStyle = '#fbbf24';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(x, word.y, 22, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+        }
+        
+        // ============================================
+        // VISUAL EFFECTS
+        // ============================================
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(100, 116, 139, 0.1)';
+            ctx.lineWidth = 1;
+            
+            for (let x = 0; x < canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y < canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+        
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 15; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    color: color,
+                    size: Math.random() * 5 + 3,
+                    alpha: 1
+                });
+            }
+        }
+        
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.02;
+                p.size *= 0.95;
+                
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                } else {
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+            }
+        }
+        
+        function addFloatingText(x, y, text, color) {
+            floatingTexts.push({
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                alpha: 1,
+                vy: -1
+            });
+        }
+        
+        function updateFloatingTexts() {
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const text = floatingTexts[i];
+                
+                text.y += text.vy;
+                text.alpha -= 0.02;
+                
+                if (text.alpha <= 0) {
+                    floatingTexts.splice(i, 1);
+                } else {
+                    ctx.globalAlpha = text.alpha;
+                    ctx.fillStyle = text.color;
+                    ctx.font = 'bold 20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(text.text, text.x, text.y);
+                    ctx.globalAlpha = 1;
+                }
+            }
+        }
+        
+        // ============================================
+        // INPUT HANDLING
+        // ============================================
+        function handleKeyPress(e) {
+            // Start game if not running
+            if (!gameRunning && e.key !== 'Escape') {
+                startGame();
+                return;
+            }
+            
+            // Pause with Escape
+            if (e.key === 'Escape') {
+                togglePause();
+                return;
+            }
+            
+            // Ignore if not running or paused
+            if (!gameRunning || gamePaused) return;
+            
+            // Check for letter key
+            const key = e.key.toUpperCase();
+            if (key.length === 1 && key >= 'A' && key <= 'Z') {
+                lettersTyped++;
+                
+                let wordCompleted = false;
+                
+                // Check all words
+                for (let i = 0; i < words.length; i++) {
+                    const word = words[i];
+                    
+                    if (word.currentIndex < word.text.length && 
+                        word.text[word.currentIndex] === key) {
+                        
+                        correctLetters++;
+                        word.currentIndex++;
+                        
+                        // Visual feedback for correct letter
+                        addFloatingText(word.x, word.y - 40, '✓', '#4ade80');
+                        
+                        playSound(523.25 + (word.currentIndex * 30), 'sine', 0.1);
+                        
+                        createExplosion(
+                            word.x + (word.currentIndex - 1) * 25 - word.text.length * 12.5,
+                            word.y,
+                            '#60a5fa'
+                        );
+                        
+                        // Check if word completed
+                        if (word.currentIndex >= word.text.length) {
+                            wordsCompleted++;
+                            totalWordsTyped++;
+                            currentProgress++;
+                            wordStreak++;
+                            
+                            if (wordStreak > maxStreak) maxStreak = wordStreak;
+                            
+                            // Base score
+                            let wordScore = word.text.length * 15 * level;
+                            score += wordScore;
+                            
+                            // Streak bonus
+                            if (wordStreak >= 3) {
+                                const streakBonus = Math.floor(wordStreak / 3) * 50;
+                                score += streakBonus;
+                                addFloatingText(word.x, word.y - 60, `${wordStreak} STREAK! +${streakBonus}`, '#fbbf24');
+                            }
+                            
+                            updateStreakDisplay();
+                            
+                            playSound(880, 'square', 0.2);
+                            
+                            // Remove word
+                            words.splice(i, 1);
+                            wordCompleted = true;
+                            
+                            // Check level up
+                            if (currentProgress >= wordsNeeded) {
+                                levelUp();
+                            } else {
+                                updateProgress();
+                            }
+                        }
+                        
+                        break;
+                    }
+                }
+                
+                // Wrong key
+                if (!wordCompleted && words.length > 0) {
+                    playSound(220, 'sawtooth', 0.1);
+                    wordStreak = 0;
+                    updateStreakDisplay();
+                    
+                    // Visual feedback for wrong key
+                    ctx.fillStyle = '#ef4444';
+                    ctx.font = 'bold 30px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('✗', canvas.width / 2, 40);
+                    
+                    // Clear after short time
+                    setTimeout(() => {
+                        if (gameRunning) {
+                            ctx.fillStyle = '#0a0a1a';
+                            ctx.fillRect(canvas.width / 2 - 20, 20, 40, 30);
+                        }
+                    }, 200);
+                }
+                
+                // Update accuracy
+                accuracy = Math.round((correctLetters / lettersTyped) * 100);
+                updateUI();
+            }
+        }
+        
+        // ============================================
+        // UI FUNCTIONS
+        // ============================================
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('level').textContent = level;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+            document.getElementById('wpm').textContent = wpm;
+            document.getElementById('lives').textContent = lives;
+            document.getElementById('speed').textContent = (levelConfig[Math.min(level, 20)].speed / 0.25).toFixed(1) + 'x';
+            document.getElementById('streak-info').textContent = `Streak: ${wordStreak}`;
+        }
+        
+        function updateProgress() {
+            const progress = (currentProgress / wordsNeeded) * 100;
+            document.getElementById('level-progress').style.width = progress + '%';
+            document.getElementById('progress-text').textContent = `${currentProgress}/${wordsNeeded}`;
+        }
+        
+        function updateStreakDisplay() {
+            const streakIndicator = document.getElementById('streakIndicator');
+            const streakCount = document.getElementById('streakCount');
+            
+            if (wordStreak >= 3) {
+                streakIndicator.style.display = 'flex';
+                streakCount.textContent = wordStreak;
+                
+                // Change color based on streak
+                if (wordStreak >= 10) {
+                    streakIndicator.style.borderColor = 'rgba(251, 191, 36, 0.8)';
+                    streakIndicator.style.background = 'rgba(251, 191, 36, 0.1)';
+                } else if (wordStreak >= 5) {
+                    streakIndicator.style.borderColor = 'rgba(59, 130, 246, 0.6)';
+                    streakIndicator.style.background = 'rgba(59, 130, 246, 0.1)';
+                }
+            } else {
+                streakIndicator.style.display = 'none';
+            }
+        }
+        
+        function updateNextLetterPreview() {
+            const preview = document.getElementById('nextLetterPreview');
+            const nextLetterEl = document.getElementById('nextLetter');
+            
+            if (words.length > 0) {
+                const nextWord = words[0];
+                if (nextWord.currentIndex < nextWord.text.length) {
+                    const nextLetter = nextWord.text[nextWord.currentIndex];
+                    preview.style.display = 'flex';
+                    nextLetterEl.textContent = nextLetter;
+                } else {
+                    preview.style.display = 'none';
+                }
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+        
+        // ============================================
+        // LEVEL UP & GAME OVER
+        // ============================================
+        function levelUp() {
+            gamePaused = true;
+            level++;
+            
+            // Update config
+            const config = levelConfig[Math.min(level, 20)];
+            wordsNeeded = config.wordsNeeded;
+            currentProgress = 0;
+            
+            // Bonus life every 5 levels
+            if (level % 5 === 0) {
+                lives++;
+                playSound(1046.5, 'sine', 0.3);
+                document.getElementById('level-message').innerHTML = `Words will be longer and faster<br><span style="color: #4ade80">+1 BONUS LIFE!</span>`;
+            } else {
+                document.getElementById('level-message').textContent = 'Words will be longer and faster';
+            }
+            
+            // Update UI
+            updateUI();
+            updateProgress();
+            
+            // Show level up screen
+            document.getElementById('new-level').textContent = level;
+            document.getElementById('level-number').textContent = level;
+            document.getElementById('levelUp').style.display = 'flex';
+            
+            // Clear words
+            words = [];
+            
+            // Play level up sound
+            playSound(1046.5, 'sine', 0.5);
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            
+            // Update final stats
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-level').textContent = level;
+            document.getElementById('final-accuracy').textContent = accuracy + '%';
+            document.getElementById('final-wpm').textContent = wpm;
+            document.getElementById('final-streak').textContent = maxStreak;
+            document.getElementById('final-words').textContent = totalWordsTyped;
+            
+            // Show game over screen
+            document.getElementById('gameOver').style.display = 'flex';
+            
+            // Play game over sound
+            playSound(174.61, 'sawtooth', 0.5);
+        }
+        
+        // ============================================
+        // MENU & UTILITY
+        // ============================================
+        function drawMenu() {
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw title with gradient
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            gradient.addColorStop(0, '#3b82f6');
+            gradient.addColorStop(0.5, '#8b5cf6');
+            gradient.addColorStop(1, '#ec4899');
+            
+            ctx.fillStyle = gradient;
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('TYPESTORM PRO', canvas.width / 2, canvas.height / 2 - 80);
+            
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '20px Arial';
+            ctx.fillText('Increase Typing Speed  + Advanced Features', canvas.width / 2, canvas.height / 2 - 20);
+            
+            ctx.font = '16px Arial';
+            ctx.fillText('Click START to begin your typing challenge!', canvas.width / 2, canvas.height / 2 + 20);
+            
+            // Draw feature highlights
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '14px Arial';
+            ctx.fillText('🔥 Streak System   •   📊 Advanced Stats   •   🔊 Sound Effects', canvas.width / 2, canvas.height / 2 + 60);
+            ctx.fillText('⚡ Increase Typing Speed   •   🎮 20 Levels   •   💡 Next Letter Preview', canvas.width / 2, canvas.height / 2 + 90);
+        }
+        
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        
+        // ============================================
+        // START GAME ON LOAD
+        // ============================================
+        window.onload = init;
+    </script>
+</body>
+</html>
